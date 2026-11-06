@@ -5,6 +5,47 @@ import { Client } from "@modelcontextprotocol/client";
 import { createRadarrConfig } from "@wyattjoh/radarr";
 import { createRadarrTools } from "../../src/tools/radarr-tools.ts";
 
+Deno.test("radarr_get_queue reads paginated download status", async () => {
+  const fetchStub = stub(globalThis, "fetch", (url, init) => {
+    assertEquals(
+      String(url),
+      "http://localhost:7878/api/v3/queue?pageSize=10&page=2",
+    );
+    assertEquals(init?.method ?? "GET", "GET");
+    return Promise.resolve(
+      new Response(
+        JSON.stringify({ records: [{ id: 1, status: "downloading" }] }),
+        {
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
+    );
+  });
+  try {
+    const server = new McpServer({ name: "test", version: "1" });
+    createRadarrTools(
+      server,
+      createRadarrConfig("http://localhost:7878", "test"),
+      (name) => name === "radarr_get_queue",
+    );
+    const { client, cleanup } = await createConnectedClient(server);
+    try {
+      const result = await client.callTool({
+        name: "radarr_get_queue",
+        arguments: { limit: 10, skip: 10 },
+      });
+      assertEquals(result.isError, undefined);
+      assertEquals(result.structuredContent, {
+        records: [{ id: 1, status: "downloading" }],
+      });
+    } finally {
+      await cleanup();
+    }
+  } finally {
+    fetchStub.restore();
+  }
+});
+
 async function createConnectedClient(
   server: McpServer,
 ): Promise<{ client: Client; cleanup: () => Promise<void> }> {

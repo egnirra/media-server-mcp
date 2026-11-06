@@ -55,6 +55,7 @@ const FACADE_PATHS: Readonly<Record<string, string>> = {
   radarr_refresh_movie: "tools.radarr.refreshMovie",
   radarr_search_movie_releases: "tools.radarr.searchMovieReleases",
   radarr_get_movies: "tools.radarr.getMovies",
+  radarr_get_queue: "tools.radarr.getQueue",
   radarr_get_movie: "tools.radarr.getMovie",
   radarr_get_configuration: "tools.radarr.getConfiguration",
   radarr_update_movie: "tools.radarr.updateMovie",
@@ -157,6 +158,7 @@ const FACADE_PATHS: Readonly<Record<string, string>> = {
 };
 
 const EXECUTABLE_READ_ONLY_TOOLS = [
+  "radarr_get_queue",
   "radarr_search_movie",
   "radarr_get_movies",
   "radarr_get_movie",

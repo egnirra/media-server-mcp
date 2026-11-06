@@ -236,6 +236,36 @@ export function createRadarrTools(
     );
   }
 
+  // radarr_get_queue
+  if (isToolEnabled("radarr_get_queue")) {
+    server.registerTool(
+      "radarr_get_queue",
+      {
+        title: "Get Radarr download queue",
+        description:
+          "Read current movie download status without starting downloads",
+        inputSchema: {
+          limit: z.number().int().min(1).max(100).default(20),
+          skip: z.number().int().min(0).default(0),
+        },
+        outputSchema: { records: z.array(z.object({}).catchall(z.unknown())) },
+        annotations: { readOnlyHint: true, openWorldHint: false },
+      },
+      wrapToolHandler("radarr_get_queue", async (args) => {
+        const records = await radarrClient.getQueue(
+          config,
+          args.limit,
+          args.skip,
+        );
+        const result = { records };
+        return {
+          content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+          structuredContent: result,
+        };
+      }),
+    );
+  }
+
   // radarr_search_movie_releases
   if (isToolEnabled("radarr_search_movie_releases")) {
     server.registerTool(
