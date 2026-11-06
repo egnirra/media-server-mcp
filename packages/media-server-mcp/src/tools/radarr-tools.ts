@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { RadarrConfig } from "@wyattjoh/radarr";
 import * as radarrClient from "@wyattjoh/radarr";
 import { withStrictInputSchemas, wrapToolHandler } from "./tool-wrapper.ts";
+import { enforceAddPolicy, getAddPolicy } from "./add-policy.ts";
 
 const RADARR_PAGINATED_HISTORY_EVENT_TYPE_IDS = {
   grabbed: 1,
@@ -103,6 +104,7 @@ export function createRadarrTools(
 
   // radarr_add_movie
   if (isToolEnabled("radarr_add_movie")) {
+    const addPolicy = getAddPolicy("RADARR");
     server.registerTool(
       "radarr_add_movie",
       {
@@ -112,10 +114,16 @@ export function createRadarrTools(
           tmdbId: z.number().describe("The Movie Database ID"),
           title: z.string().describe("Movie title"),
           year: z.number().describe("Movie release year"),
-          qualityProfileId: z.number().describe("Quality profile ID to use"),
-          rootFolderPath: z.string().describe(
-            "Root folder path where movie should be stored",
-          ),
+          qualityProfileId: (addPolicy.qualityProfileId === undefined
+            ? z.number()
+            : z.number().default(addPolicy.qualityProfileId)).describe(
+              "Quality profile ID to use",
+            ),
+          rootFolderPath: (addPolicy.rootFolderPath === undefined
+            ? z.string()
+            : z.string().default(addPolicy.rootFolderPath)).describe(
+              "Root folder path where movie should be stored",
+            ),
           minimumAvailability: z.enum([
             "tba",
             "announced",
@@ -126,7 +134,9 @@ export function createRadarrTools(
           monitored: z.boolean().optional().default(true).describe(
             "Whether to monitor the movie",
           ),
-          searchForMovie: z.boolean().optional().default(true).describe(
+          searchForMovie: z.boolean().optional().default(
+            addPolicy.searchOnAdd ?? false,
+          ).describe(
             "Whether to search for the movie immediately after adding",
           ),
           tags: z.array(z.number()).optional().describe(
@@ -137,6 +147,10 @@ export function createRadarrTools(
         annotations: { openWorldHint: false },
       },
       wrapToolHandler("radarr_add_movie", async (args) => {
+        enforceAddPolicy(addPolicy, {
+          ...args,
+          searchOnAdd: args.searchForMovie,
+        });
         const params = {
           ...args,
           tags: args.tags || undefined,

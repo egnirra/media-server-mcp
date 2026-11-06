@@ -242,7 +242,13 @@ export async function addSeries(
     seriesType: options.seriesType ?? "standard",
     tags: options.tags ?? [],
     seasons: options.seasons ?? [],
+    ...(options.monitorNewItems !== undefined &&
+      { monitorNewItems: options.monitorNewItems }),
     addOptions: {
+      ...(options.addOptions?.monitor !== undefined &&
+        { monitor: options.addOptions.monitor }),
+      searchForCutoffUnmetEpisodes:
+        options.addOptions?.searchForCutoffUnmetEpisodes ?? false,
       ignoreEpisodesWithFiles: options.addOptions?.ignoreEpisodesWithFiles ??
         false,
       ignoreEpisodesWithoutFiles:

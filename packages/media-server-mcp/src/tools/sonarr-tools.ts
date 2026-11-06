@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { SonarrConfig, SonarrSeries } from "@wyattjoh/sonarr";
 import * as sonarrClient from "@wyattjoh/sonarr";
 import { withStrictInputSchemas, wrapToolHandler } from "./tool-wrapper.ts";
+import { enforceAddPolicy, getAddPolicy } from "./add-policy.ts";
 
 const SONARR_PAGINATED_HISTORY_EVENT_TYPE_IDS = {
   grabbed: 1,
@@ -133,6 +134,7 @@ export function createSonarrTools(
 
   // sonarr_add_series
   if (isToolEnabled("sonarr_add_series")) {
+    const addPolicy = getAddPolicy("SONARR");
     server.registerTool(
       "sonarr_add_series",
       {
@@ -141,10 +143,16 @@ export function createSonarrTools(
         inputSchema: {
           tvdbId: z.number().describe("The TVDB ID"),
           title: z.string().describe("Series title"),
-          qualityProfileId: z.number().describe("Quality profile ID to use"),
-          rootFolderPath: z.string().describe(
-            "Root folder path where series should be stored",
-          ),
+          qualityProfileId: (addPolicy.qualityProfileId === undefined
+            ? z.number()
+            : z.number().default(addPolicy.qualityProfileId)).describe(
+              "Quality profile ID to use",
+            ),
+          rootFolderPath: (addPolicy.rootFolderPath === undefined
+            ? z.string()
+            : z.string().default(addPolicy.rootFolderPath)).describe(
+              "Root folder path where series should be stored",
+            ),
           monitored: z.boolean().optional().default(true).describe(
             "Whether to monitor the series",
           ),
@@ -163,16 +171,35 @@ export function createSonarrTools(
           seasons: z.array(z.strictObject({
             seasonNumber: z.number(),
             monitored: z.boolean(),
-          }, { error: () => "Invalid tool input" })).optional().describe(
+          }, {
+            error: () =>
+              "Invalid tool input",
+          })).optional().describe(
             "Seasons to monitor",
           ),
-          searchForMissingEpisodes: z.boolean().optional().default(false)
+          monitor: z.enum(["all", "future", "none"]).default(
+            addPolicy.monitor ?? "all",
+          )
+            .describe(
+              "Initial episode monitoring policy; future excludes already-aired episodes",
+            ),
+          monitorNewItems: z.enum(["all", "none"]).default("all")
+            .describe(
+              "Whether newly discovered seasons/episodes should be monitored",
+            ),
+          searchForMissingEpisodes: z.boolean().optional().default(
+            addPolicy.searchOnAdd ?? false,
+          )
             .describe("Whether to search for missing episodes after adding"),
         },
         outputSchema: z.object({}).catchall(z.unknown()),
         annotations: { openWorldHint: false },
       },
       wrapToolHandler("sonarr_add_series", async (args) => {
+        enforceAddPolicy(addPolicy, {
+          ...args,
+          searchOnAdd: args.searchForMissingEpisodes,
+        });
         const params = {
           ...args,
           languageProfileId: args.languageProfileId || undefined,
@@ -184,6 +211,8 @@ export function createSonarrTools(
           addOptions: args.searchForMissingEpisodes !== undefined
             ? {
               searchForMissingEpisodes: args.searchForMissingEpisodes,
+              searchForCutoffUnmetEpisodes: false,
+              monitor: args.monitor,
               ignoreEpisodesWithFiles: undefined,
               ignoreEpisodesWithoutFiles: undefined,
             }

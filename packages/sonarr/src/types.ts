@@ -519,6 +519,7 @@ export interface SonarrHistoryRecord {
 }
 
 export interface SonarrAddSeriesOptions {
+  monitorNewItems?: "all" | "none";
   title: string;
   qualityProfileId: number;
   languageProfileId: number | undefined;
@@ -535,6 +536,8 @@ export interface SonarrAddSeriesOptions {
     }>
     | undefined;
   addOptions: {
+    monitor?: "all" | "future" | "none";
+    searchForCutoffUnmetEpisodes?: boolean;
     ignoreEpisodesWithFiles: boolean | undefined;
     ignoreEpisodesWithoutFiles: boolean | undefined;
     searchForMissingEpisodes: boolean | undefined;

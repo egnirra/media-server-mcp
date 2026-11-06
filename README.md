@@ -14,6 +14,39 @@ This is a monorepo containing the following packages:
 
 ## Features
 
+### Operator-enforced add policies (fork)
+
+Both add tools default to **no immediate search**. Configure optional defaults
+below to also reject conflicting caller overrides before any API write:
+
+```dotenv
+SONARR_ADD_QUALITY_PROFILE_ID=4
+SONARR_ADD_ROOT_FOLDER=/media/plex/data/Serier
+SONARR_SEARCH_ON_ADD=false
+SONARR_ADD_MONITOR=future
+RADARR_ADD_QUALITY_PROFILE_ID=4
+RADARR_ADD_ROOT_FOLDER=/media/plex/data/Filmer
+RADARR_SEARCH_ON_ADD=false
+```
+
+Profile IDs and paths are installation-specific; inspect your services first.
+Without profile/root settings those fields remain required tool inputs.
+Invalid settings fail closed when registering an enabled add tool.
+
+`sonarr_add_series` accepts `monitor` (`all`, `future`, `none`; default `all`)
+and `monitorNewItems` (`all`, `none`; default `all`). `future` is forwarded as
+Sonarr's `addOptions.monitor`; cutoff-unmet searching is disabled on add.
+An enforced future policy rejects disabled series monitoring, disabled new-item
+monitoring, and nonempty season overrides. Thus existing aired episodes are not
+initially monitored while future episodes/new seasons remain monitored.
+Normal Sonarr RSS grabs can still download monitored episodes as they release:
+**no search-on-add does not mean automatic downloads are disabled**.
+
+Search-on-add policies do not restrict separate targeted search tools. Filter
+delete and library-wide search tools separately. API keys still grant broad
+service access: tool filtering and these policies are not an API permission
+boundary for an agent with shell access or the keys.
+
 - **Radarr Integration**: Search, add, manage, and monitor movies
 - **Sonarr Integration**: Search, add, manage, and monitor TV series
 - **Plex Integration**: Browse libraries, search content, and manage Plex media server
