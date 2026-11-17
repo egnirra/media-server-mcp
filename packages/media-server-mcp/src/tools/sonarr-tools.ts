@@ -1136,13 +1136,45 @@ export function createSonarrTools(
     );
   }
 
+  if (isToolEnabled("sonarr_get_season_releases")) {
+    server.registerTool(
+      "sonarr_get_season_releases",
+      {
+        title: "Browse season releases and packs without downloading",
+        description:
+          "Interactive indexer search for a specific library series and season. Returns raw candidates, including season packs and any episode releases returned by Sonarr, with titles, sizes, seeders and rejection reasons when available. Does not select or download releases. Inspect fullSeason/episodeNumbers and titles; do not assume every result is a complete season pack. Unlike sonarr_search_season, this only browses. Use sonarr_grab_release only after explicit download authorization.",
+        inputSchema: {
+          seriesId: z.number().int().positive().describe(
+            "Library Sonarr series ID, NOT TVDB ID",
+          ),
+          seasonNumber: z.number().int().nonnegative().describe(
+            "Season number; 0 means specials",
+          ),
+        },
+        outputSchema: { data: z.array(z.record(z.string(), z.unknown())) },
+        annotations: { readOnlyHint: true, openWorldHint: false },
+      },
+      wrapToolHandler("sonarr_get_season_releases", async (args) => {
+        const results = await sonarrClient.getSeasonReleases(
+          config,
+          args.seriesId,
+          args.seasonNumber,
+        );
+        return {
+          content: [{ type: "text", text: JSON.stringify(results, null, 2) }],
+          structuredContent: { data: results },
+        };
+      }),
+    );
+  }
+
   if (isToolEnabled("sonarr_grab_release")) {
     server.registerTool(
       "sonarr_grab_release",
       {
-        title: "Download a specific release for an episode",
+        title: "Download a specific episode or season release",
         description:
-          "Grab (download) a specific release found via sonarr_get_releases. Requires the guid and indexerId from the release.",
+          "Grab (download) a specific episode or season release found via sonarr_get_releases or sonarr_get_season_releases. Requires the exact guid and indexerId from the result and explicit user authorization for its scope.",
         inputSchema: {
           guid: z.string().describe("Release GUID from sonarr_get_releases"),
           indexerId: z.number().describe(

@@ -116,6 +116,7 @@ export const TOOL_BRANCHES: ToolCategory[] = [
       "sonarr_get_history",
       "sonarr_get_series_history",
       "sonarr_get_releases",
+      "sonarr_get_season_releases",
       "sonarr_grab_release",
       "sonarr_delete_queue_item",
       "sonarr_grab_queue_item",

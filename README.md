@@ -14,6 +14,19 @@ This is a monorepo containing the following packages:
 
 ## Features
 
+### Browse season packs (fork)
+
+`sonarr_get_season_releases({seriesId, seasonNumber})` performs Sonarr's
+interactive `GET /release?seriesId=...&seasonNumber=...` search. It returns raw
+release metadata (including packs, individual episode results, sizes, seeders,
+and rejection reasons when supplied) without selecting/downloading anything.
+Use the library Sonarr ID, not TVDB ID. Season 0 is specials.
+Check `fullSeason`, `episodeNumbers`, and titles before claiming complete packs.
+Indexer capabilities determine availability; zero returned packs is not proof
+none exist anywhere. `sonarr_search_season` is a different tool: automatic search
+that can start downloads. An explicitly approved result can be downloaded via
+`sonarr_grab_release` with its exact GUID/indexer ID, without changing filters.
+
 ### Operator-enforced add policies (fork)
 
 Both add tools default to **no immediate search**. Configure optional defaults

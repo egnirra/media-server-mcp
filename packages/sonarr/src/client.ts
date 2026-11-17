@@ -691,6 +691,26 @@ export function getReleases(
   );
 }
 
+// Interactive season search: browse releases without issuing download commands.
+export function getSeasonReleases(
+  config: SonarrConfig,
+  seriesId: number,
+  seasonNumber: number,
+): Promise<SonarrRelease[]> {
+  if (
+    !Number.isSafeInteger(seriesId) || seriesId <= 0 ||
+    !Number.isSafeInteger(seasonNumber) || seasonNumber < 0
+  ) {
+    throw new Error(
+      "Use a positive Sonarr series ID and nonnegative season number",
+    );
+  }
+  return makeRequest<SonarrRelease[]>(
+    config,
+    `/release?seriesId=${seriesId}&seasonNumber=${seasonNumber}`,
+  );
+}
+
 // Grab a specific release (download it)
 export async function grabRelease(
   config: SonarrConfig,
